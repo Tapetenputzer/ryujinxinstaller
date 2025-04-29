@@ -1,4 +1,4 @@
-// downloader_gui.cpp
+
 #ifndef UNICODE
 #define UNICODE
 #endif
