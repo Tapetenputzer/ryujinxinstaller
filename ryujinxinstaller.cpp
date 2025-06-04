@@ -46,8 +46,8 @@ void AppendLog(const std::wstring& text) {
 void DownloadAndExtract() {
     const std::vector<std::wstring> urls = {
         L"https://github.com/Ryubing/Stable-Releases/releases/download/1.3.1/ryujinx-1.3.1-win_x64.zip",
-        L"https://github.com/THZoria/NX_Firmware/releases/download/19.0.1/Firmware.19.0.1.zip",
-        L"https://files.prodkeys.net/ProdKeys.net-v19.0.1.zip"
+        L"https://github.com/THZoria/NX_Firmware/releases/download/20.0.1/Firmware.20.0.1.zip",
+        L"https://files.prodkeys.net/ProdKeys.net-v20.0.1.zip"
     };
     const int totalFiles = (int)urls.size();
 
