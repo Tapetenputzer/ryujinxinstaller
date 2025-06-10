@@ -1,4 +1,3 @@
-
 #ifndef UNICODE
 #define UNICODE
 #endif
@@ -20,12 +19,10 @@
 
 namespace fs = std::filesystem;
 
-// Control-IDs
 constexpr int ID_BUTTON = 101;
 constexpr int ID_LOG = 102;
 constexpr int ID_PROGRESS = 103;
 
-// GUI-Handles & Farben
 HWND     hButton = nullptr;
 HWND     hLog = nullptr;
 HWND     hProgress = nullptr;
@@ -33,7 +30,6 @@ HFONT    hFont = nullptr;
 HBRUSH   hBrushBG = nullptr;
 COLORREF colText = RGB(230, 230, 230);
 
-// thread-sicheres Logging
 std::mutex logMutex;
 void AppendLog(const std::wstring& text) {
     std::lock_guard<std::mutex> lk(logMutex);
@@ -42,7 +38,6 @@ void AppendLog(const std::wstring& text) {
         (LPARAM)(text + L"\r\n").c_str());
 }
 
-// Haupt-Routine: Download & Entpacken mit globalem Fortschritt
 void DownloadAndExtract() {
     const std::vector<std::wstring> urls = {
         L"https://github.com/Ryubing/Stable-Releases/releases/download/1.3.1/ryujinx-1.3.1-win_x64.zip",
@@ -51,7 +46,6 @@ void DownloadAndExtract() {
     };
     const int totalFiles = (int)urls.size();
 
-    // Desktop\ryujinx anlegen
     size_t len = 0;
     _wgetenv_s(&len, nullptr, 0, L"USERPROFILE");
     std::vector<wchar_t> buf(len);
@@ -65,7 +59,6 @@ void DownloadAndExtract() {
         return;
     }
 
-    // WinINet-Session starten
     HINTERNET hInet = InternetOpenW(
         L"RyujinxInstaller",
         INTERNET_OPEN_TYPE_PRECONFIG,
@@ -77,7 +70,6 @@ void DownloadAndExtract() {
         return;
     }
 
-    // 1) Gesamtgröße aller Dateien ermitteln
     std::vector<DWORD> sizes(totalFiles);
     DWORD64 totalSize = 0;
     for (int i = 0; i < totalFiles; ++i) {
@@ -104,12 +96,10 @@ void DownloadAndExtract() {
         totalSize += sizes[i];
     }
 
-    // 2) ProgressBar auf Gesamt­größe setzen
     SendMessageW(hProgress, PBM_SETRANGE32,
         0, static_cast<LPARAM>(totalSize));
     SendMessageW(hProgress, PBM_SETPOS, 0, 0);
 
-    // 3) Tatsächlicher Download mit globalem Fortschritt
     DWORD64 downloaded = 0;
     std::unordered_map<std::wstring, int> folderCount;
 
@@ -124,7 +114,6 @@ void DownloadAndExtract() {
         fs::path extractPath = baseDir / folder;
         fs::create_directories(extractPath, ec);
 
-        // Log: Download­start
         AppendLog(L"[INFO] (" +
             std::to_wstring(i + 1) + L"/" +
             std::to_wstring(totalFiles) + L") Starte Download: " + fn);
@@ -140,7 +129,6 @@ void DownloadAndExtract() {
             continue;
         }
 
-        // in Datei schreiben
         std::ofstream ofs(zipPath, std::ios::binary);
         constexpr DWORD bufSize = 8192;
         std::vector<char> buffer(bufSize);
@@ -154,12 +142,10 @@ void DownloadAndExtract() {
         ofs.close();
         InternetCloseHandle(hUrl);
 
-        // Log: Download fertig
         AppendLog(L"[INFO] Download abgeschlossen: " + fn);
-
-        // Entpacken
         AppendLog(L"[INFO] Entpacke: " + fn);
-        std::wstring cmd = L"powershell.exe -WindowStyle Hidden -Command \""
+
+        std::wstring cmd = L"powershell.exe -WindowStyle Hidden -Command \"" 
             L"Expand-Archive -Path '" + zipPath.wstring() +
             L"' -DestinationPath '" + extractPath.wstring() +
             L"' -Force\"";
@@ -173,12 +159,9 @@ void DownloadAndExtract() {
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
-        // Log: Entpacken fertig
         AppendLog(L"[INFO] Entpacken abgeschlossen: " + fn);
 
-        // Zip löschen (ohne Log)
         fs::remove(zipPath, ec);
-
         AppendLog(L"");
     }
 
@@ -187,7 +170,6 @@ void DownloadAndExtract() {
     EnableWindow(hButton, TRUE);
 }
 
-// Fenster-Prozedur (Dark-Mode)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_CREATE: {
@@ -200,7 +182,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
             CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI"
         );
 
-        // Start-Button
         hButton = CreateWindowExW(
             0, L"BUTTON", L"Starten",
             WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
@@ -211,7 +192,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
         );
         SendMessageW(hButton, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        // ProgressBar
         INITCOMMONCONTROLSEX ic{ sizeof(ic), ICC_PROGRESS_CLASS };
         InitCommonControlsEx(&ic);
         hProgress = CreateWindowExW(
@@ -223,7 +203,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
             nullptr, nullptr
         );
 
-        // Log-Feld
         hLog = CreateWindowExW(
             0, L"EDIT", nullptr,
             WS_CHILD | WS_VISIBLE | WS_VSCROLL |
@@ -266,7 +245,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
     return DefWindowProcW(hWnd, msg, wp, lp);
 }
 
-// Unicode-Entry-Point
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int nCmdShow) {
     WNDCLASSW wc{};
     wc.lpfnWndProc = WndProc;
